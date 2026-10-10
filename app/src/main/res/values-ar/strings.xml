@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScanDZ</string>
+    <string name="doc_list">سجل الوثائق</string>
+    <string name="new_scan">مسح جديد</string>
+    <string name="capture">التقاط</string>
+    <string name="crop_title">اضبط الزوايا الأربع</string>
+    <string name="validate">تأكيد</string>
+    <string name="export_pdf">تصدير PDF</string>
+    <string name="share">مشاركة</string>
+    <string name="delete">حذف</string>
+    <string name="search_hint">بحث…</string>
+    <string name="empty">لا توجد وثائق. اضغط + للمسح.</string>
+    <string name="pages">صفحات</string>
+    <string name="filter_none">الأصل</string>
+    <string name="filter_gray">رمادي</string>
+    <string name="filter_bw">أبيض/أسود</string>
+    <string name="camera_permission">يلزم إذن الكاميرا للمسح.</string>
+    <string name="grant">سماح</string>
+</resources>

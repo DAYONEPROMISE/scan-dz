@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScanDZ</string>
+    <string name="doc_list">Registre des documents</string>
+    <string name="new_scan">Nouveau scan</string>
+    <string name="capture">Capturer</string>
+    <string name="crop_title">Ajuster les 4 coins</string>
+    <string name="validate">Valider</string>
+    <string name="export_pdf">Exporter PDF</string>
+    <string name="share">Partager</string>
+    <string name="delete">Supprimer</string>
+    <string name="search_hint">Rechercher…</string>
+    <string name="empty">Aucun document. Touchez + pour scanner.</string>
+    <string name="pages">pages</string>
+    <string name="filter_none">Original</string>
+    <string name="filter_gray">Gris</string>
+    <string name="filter_bw">N/B net</string>
+    <string name="camera_permission">Autorisation caméra requise pour scanner.</string>
+    <string name="grant">Autoriser</string>
+</resources>
