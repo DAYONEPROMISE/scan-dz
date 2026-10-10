@@ -17,4 +17,7 @@
     <string name="filter_bw">N/B net</string>
     <string name="camera_permission">Autorisation caméra requise pour scanner.</string>
     <string name="grant">Autoriser</string>
+    <string name="add_desc">Nouveau scan</string>
+    <string name="back_desc">Retour</string>
+    <string name="preview_desc">Aperçu du document corrigé</string>
 </resources>

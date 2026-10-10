@@ -17,4 +17,7 @@
     <string name="filter_bw">أبيض/أسود</string>
     <string name="camera_permission">يلزم إذن الكاميرا للمسح.</string>
     <string name="grant">سماح</string>
+    <string name="add_desc">مسح جديد</string>
+    <string name="back_desc">رجوع</string>
+    <string name="preview_desc">معاينة الوثيقة المصححة</string>
 </resources>

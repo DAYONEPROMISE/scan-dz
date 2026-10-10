@@ -4,23 +4,28 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -33,7 +38,6 @@ import dz.scandz.scan.PdfExporter
 import dz.scandz.scan.Pt
 import dz.scandz.scan.ScanFilter
 import dz.scandz.scan.buildPdfName
-import dz.scandz.scan.defaultQuad
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,6 +49,21 @@ sealed interface Route {
     data class Crop(val photoPath: String, val docTitle: String) : Route
 }
 
+/** 2026 baseline theme: dynamic color on Android 12+, system dark mode, M3 typography. */
+@Composable
+fun ScanDZTheme(content: @Composable () -> Unit) {
+    val dark = isSystemInDarkTheme()
+    val scheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val ctx = LocalContext.current
+            if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
+        }
+        dark -> darkColorScheme()
+        else -> lightColorScheme()
+    }
+    MaterialTheme(colorScheme = scheme, content = content)
+}
+
 class MainActivity : ComponentActivity() {
     private lateinit var db: AppDb
     private var hasCam by mutableStateOf(false)
@@ -54,12 +73,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         db = Room.databaseBuilder(applicationContext, AppDb::class.java, "scandz.db").build()
         hasCam = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         if (!hasCam) perm.launch(Manifest.permission.CAMERA)
         val dir = File(filesDir, "scans").apply { mkdirs() }
         setContent {
-            MaterialTheme {
+            ScanDZTheme {
                 var route by remember { mutableStateOf<Route>(Route.List) }
                 var query by remember { mutableStateOf("") }
                 // collect docs via state
@@ -122,30 +142,35 @@ fun DocList(
 ) {
     var title by remember { mutableStateOf("") }
     Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = { onNew(title) }) { Text("+") }
+        FloatingActionButton(onClick = { onNew(title) }) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_desc))
+        }
     }) { pad ->
-        Column(Modifier.padding(pad).padding(16.dp)) {
-            Text(stringResource(R.string.doc_list), style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(8.dp))
-            if (!hasCam) {
-                Text(stringResource(R.string.camera_permission))
-                Button(onClick = onGrant) { Text(stringResource(R.string.grant)) }
+        // Adaptive: constrain content width on tablets/foldables, centered.
+        Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.TopCenter) {
+            Column(Modifier.fillMaxWidth().widthIn(max = 840.dp).padding(16.dp)) {
+                Text(stringResource(R.string.doc_list), style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(8.dp))
-            }
-            OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(stringResource(R.string.new_scan)) }, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(value = query, onValueChange = onQuery, label = { Text(stringResource(R.string.search_hint)) }, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            if (docs.isEmpty()) Text(stringResource(R.string.empty))
-            LazyColumn {
-                items(docs, key = { it.id }) { d ->
-                    Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                        Column(Modifier.padding(12.dp)) {
-                            Text(d.title, style = MaterialTheme.typography.titleMedium)
-                            Text("${d.pageCount} ${stringResource(R.string.pages)}")
-                            Row {
-                                TextButton(onClick = { onShare(d) }) { Text(stringResource(R.string.share)) }
-                                TextButton(onClick = { onDelete(d) }) { Text(stringResource(R.string.delete)) }
+                if (!hasCam) {
+                    Text(stringResource(R.string.camera_permission))
+                    Button(onClick = onGrant) { Text(stringResource(R.string.grant)) }
+                    Spacer(Modifier.height(8.dp))
+                }
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text(stringResource(R.string.new_scan)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = query, onValueChange = onQuery, label = { Text(stringResource(R.string.search_hint)) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                Spacer(Modifier.height(8.dp))
+                if (docs.isEmpty()) Text(stringResource(R.string.empty))
+                LazyColumn {
+                    items(docs, key = { it.id }) { d ->
+                        Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(d.title, style = MaterialTheme.typography.titleMedium)
+                                Text("${d.pageCount} ${stringResource(R.string.pages)}")
+                                Row {
+                                    TextButton(onClick = { onShare(d) }) { Text(stringResource(R.string.share)) }
+                                    TextButton(onClick = { onDelete(d) }) { Text(stringResource(R.string.delete)) }
+                                }
                             }
                         }
                     }
@@ -179,17 +204,19 @@ fun CropScreen(photoPath: String, onDone: (List<android.graphics.Bitmap>) -> Uni
         Bitmaps.scanPage(src, quad, ow, oh, filter)
     }
     Scaffold(topBar = { Text(stringResource(R.string.crop_title), modifier = Modifier.padding(16.dp)) }) { pad ->
-        Column(Modifier.padding(pad).padding(16.dp)) {
-            androidx.compose.foundation.Image(bitmap = preview.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxWidth().weight(1f), contentScale = ContentScale.Fit)
-            Row { FilterButton("Original", filter == ScanFilter.ORIGINAL) { filter = ScanFilter.ORIGINAL }; FilterButton("Gris", filter == ScanFilter.GRAY) { filter = ScanFilter.GRAY }; FilterButton("N/B", filter == ScanFilter.BW) { filter = ScanFilter.BW } }
-            CornerSlider("TL.x", tlx) { tlx = it }; CornerSlider("TL.y", tly) { tly = it }
-            CornerSlider("TR.x", trx) { trx = it }; CornerSlider("TR.y", try_) { try_ = it }
-            CornerSlider("BR.x", brx) { brx = it }; CornerSlider("BR.y", bry) { bry = it }
-            CornerSlider("BL.x", blx) { blx = it }; CornerSlider("BL.y", bly) { bly = it }
-            Row {
-                Button(onClick = onBack) { Text("←") }
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = { busy = true; onDone(listOf(preview)) }, enabled = !busy) { Text(stringResource(R.string.validate)) }
+        Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.TopCenter) {
+            Column(Modifier.fillMaxWidth().widthIn(max = 840.dp).padding(16.dp)) {
+                androidx.compose.foundation.Image(bitmap = preview.asImageBitmap(), contentDescription = stringResource(R.string.preview_desc), modifier = Modifier.fillMaxWidth().weight(1f), contentScale = ContentScale.Fit)
+                Row { FilterButton("Original", filter == ScanFilter.ORIGINAL) { filter = ScanFilter.ORIGINAL }; FilterButton("Gris", filter == ScanFilter.GRAY) { filter = ScanFilter.GRAY }; FilterButton("N/B", filter == ScanFilter.BW) { filter = ScanFilter.BW } }
+                CornerSlider("TL.x", tlx) { tlx = it }; CornerSlider("TL.y", tly) { tly = it }
+                CornerSlider("TR.x", trx) { trx = it }; CornerSlider("TR.y", try_) { try_ = it }
+                CornerSlider("BR.x", brx) { brx = it }; CornerSlider("BR.y", bry) { bry = it }
+                CornerSlider("BL.x", blx) { blx = it }; CornerSlider("BL.y", bly) { bly = it }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_desc)) }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { busy = true; onDone(listOf(preview)) }, enabled = !busy) { Text(stringResource(R.string.validate)) }
+                }
             }
         }
     }
@@ -203,5 +230,8 @@ fun FilterButton(t: String, sel: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun CornerSlider(label: String, v: Float, onV: (Float) -> Unit) {
-    Row { Text(label, modifier = Modifier.width(48.dp)); Slider(value = v, onValueChange = onV, modifier = Modifier.weight(1f)) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.width(48.dp))
+        Slider(value = v, onValueChange = onV, modifier = Modifier.weight(1f).semantics { contentDescription = label })
+    }
 }
