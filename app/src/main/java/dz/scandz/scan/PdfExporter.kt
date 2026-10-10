@@ -7,7 +7,7 @@ import java.io.FileOutputStream
 
 /** Multi-page PDF writer using the built-in android.graphics.pdf.PdfDocument (no deps, offline). */
 object PdfExporter {
-    fun export(bitmaps: List<Bitmap>, outFile: File, dpi: Int = 200, jpegQuality: Int = 85) {
+    fun export(bitmaps: List<Bitmap>, outFile: File, dpi: Int = 200) {
         require(bitmaps.isNotEmpty())
         val doc = PdfDocument()
         try {
