@@ -15,7 +15,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      # NOTE: no setup-android step: ubuntu-latest runners ship the SDK
+      # (ANDROID_HOME pre-set); setup-android@v3 is broken (obsolete 'tools' pkg).
       - name: Unit tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace
       - name: Lint
